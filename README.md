@@ -1,96 +1,67 @@
-# Flask REST API — AWS Cloud Foundations
+# Flask REST API v2 — AWS Cloud Foundations (Segunda Entrega)
 
-API REST con Flask (Python) para las entidades **Alumno** y **Profesor**.
-Almacenamiento en memoria (sin base de datos).
+API REST con Flask + SQLAlchemy + RDS + S3 + SNS + DynamoDB.
 
 ---
 
-## Entidades
+## Nuevos campos y endpoints
 
 ### Alumno
-| Campo      | Tipo    | Reglas                     |
-|------------|---------|----------------------------|
-| id         | string  | Auto-generado (UUID)       |
-| nombres    | string  | Requerido, no vacío        |
-| apellidos  | string  | Requerido, no vacío        |
-| matricula  | string  | Requerido, no vacío        |
-| promedio   | float   | Requerido, entre 0 y 10   |
+| Campo         | Tipo    | Notas                        |
+|---------------|---------|------------------------------|
+| id            | int     | Auto-generado por RDS        |
+| nombres       | string  | Requerido                    |
+| apellidos     | string  | Requerido                    |
+| matricula     | string  | Requerido                    |
+| promedio      | float   | 0–10                         |
+| password      | string  | Requerido                    |
+| fotoPerfilUrl | string  | URL pública de S3 (opcional) |
 
-### Profesor
-| Campo          | Tipo    | Reglas                  |
-|----------------|---------|-------------------------|
-| id             | string  | Auto-generado (UUID)    |
-| numeroEmpleado | string  | Requerido, no vacío     |
-| nombres        | string  | Requerido, no vacío     |
-| apellidos      | string  | Requerido, no vacío     |
-| horasClase     | int     | Requerido, entero > 0   |
-
----
-
-## Endpoints
-
-| Método | Ruta                  | Descripción               |
-|--------|-----------------------|---------------------------|
-| GET    | /alumnos              | Listar todos los alumnos  |
-| GET    | /alumnos/{id}         | Obtener alumno por ID     |
-| POST   | /alumnos              | Crear alumno              |
-| PUT    | /alumnos/{id}         | Actualizar alumno         |
-| DELETE | /alumnos/{id}         | Eliminar alumno           |
-| GET    | /profesores           | Listar todos los profes   |
-| GET    | /profesores/{id}      | Obtener profesor por ID   |
-| POST   | /profesores           | Crear profesor            |
-| PUT    | /profesores/{id}      | Actualizar profesor       |
-| DELETE | /profesores/{id}      | Eliminar profesor         |
+### Endpoints nuevos
+| Método | Ruta                           | Descripción                  |
+|--------|--------------------------------|------------------------------|
+| POST   | /alumnos/{id}/fotoPerfil       | Sube imagen a S3             |
+| POST   | /alumnos/{id}/email            | Envía notificación por SNS   |
+| POST   | /alumnos/{id}/session/login    | Crea sesión en DynamoDB      |
+| POST   | /alumnos/{id}/session/verify   | Verifica sesión activa       |
+| POST   | /alumnos/{id}/session/logout   | Cierra sesión                |
 
 ---
 
-## Correr localmente
+## Despliegue en EC2
 
 ```bash
-# 1. Clonar el repositorio
+# 1. Clonar repositorio
 git clone https://github.com/Greco140/flask-aws-api.git
 cd flask-aws-api
 
-# 2. Crear entorno virtual
-python3 -m venv venv
-source venv/bin/activate        # Linux / Mac
-# venv\Scripts\activate         # Windows
+# 2. Instalar dependencias
+sudo pip3 install -r requirements.txt
 
-# 3. Instalar dependencias
-pip install -r requirements.txt
+# 3. Configurar variables de entorno
+nano setup_env.sh   # Llenar con tus credenciales
+source setup_env.sh
 
-# 4. Levantar en puerto 5000 (desarrollo)
-python app.py
+# 4. Levantar app
+sudo -E python3 app.py
 ```
 
-La API quedará disponible en `http://localhost:80`.
+> ⚠️ Usar `sudo -E` para que las variables de entorno pasen al proceso con sudo.
 
 ---
 
-## Despliegue en EC2 (Amazon Linux 2023)
+## Variables de entorno requeridas
 
-```bash
-# En la instancia EC2 (como ec2-user):
-sudo dnf update -y
-sudo dnf install python3 python3-pip git -y
-
-git clone https://github.com/Greco140/flask-aws-api.git
-cd flask-aws-api
-
-pip3 install -r requirements.txt
-
-# Levantar en puerto 80 (requiere sudo)
-sudo python3 app.py
-```
-
----
-
-## Códigos HTTP utilizados
-
-| Código | Significado             |
-|--------|-------------------------|
-| 200    | OK                      |
-| 201    | Created                 |
-| 400    | Bad Request (validación)|
-| 404    | Not Found               |
-| 500    | Internal Server Error   |
+| Variable              | Descripción                          |
+|-----------------------|--------------------------------------|
+| DB_HOST               | Endpoint de RDS                      |
+| DB_NAME               | Nombre de la base de datos           |
+| DB_USER               | Usuario de RDS                       |
+| DB_PASSWORD           | Contraseña de RDS                    |
+| AWS_ACCESS_KEY_ID     | Del botón AWS Details en el lab      |
+| AWS_SECRET_ACCESS_KEY | Del botón AWS Details en el lab      |
+| AWS_SESSION_TOKEN     | Del botón AWS Details en el lab      |
+| AWS_REGION            | us-east-1                            |
+| S3_BUCKET_NAME        | Nombre del bucket S3                 |
+| SNS_TOPIC_ARN         | ARN del topic SNS                    |
+| DYNAMODB_TABLE        | sesiones-alumnos                     |
